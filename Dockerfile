@@ -7,11 +7,18 @@ WORKDIR /usr/src/app
 ## COPY package.json package-lock.json ./
 COPY package*.json ./
 
+## Instalar as dependências
 RUN npm i
 
+## Copiar o resto do código
 COPY . .
 
+## Buildar a aplicação
 RUN npm run build
+
+## Copiar o build e node_modules do node para a imagem
+RUN npm ci --omit=dev && npm cache clean --force
+
 ################################################################
 ## AS runtime é uma etapa de runtime                          ##
 ## Nesse estágia já temos o build na contruçao da imagem.     ##
@@ -24,12 +31,13 @@ WORKDIR /usr/src/app
 
 ## Copiar o build e node_modules do node para a imagem
 ## O /usr/src/app é o diretório padrão do WORKDIR /usr/src/app na linha:4
+COPY --from=build /usr/src/app/package.json ./package.json
 COPY --from=build /usr/src/app/dist ./dist
 COPY --from=build /usr/src/app/node_modules ./node_modules
 
 EXPOSE 3000
 
-CMD ["npm", "run", "start"]
+CMD ["npm", "run", "start:prod"]
 
 ## Criar uma imagem a partir do Dockerfile
 ## docker build -t api .
@@ -52,6 +60,7 @@ CMD ["npm", "run", "start"]
 ## 525MB (ajuste dos arquino no .dockerignore)                                             ##
 ## 438MB (alterado imagem para -alpine)                                                    ##
 ## 372MB Depois que add etapas de build e runtime, e compiando somente o necessário.       ##
+## 145MB Ajuste npm ci --omit=dev, e adicionando e subindo o arquivo nessesarios.          ##
 #############################################################################################
 
 ##############################
